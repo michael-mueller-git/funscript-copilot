@@ -1,0 +1,4 @@
+[submodule "lib"]
+	path = lib
+	url = git@github.com:michael-mueller-git/funscript-toolbox.git
+	branch = main
