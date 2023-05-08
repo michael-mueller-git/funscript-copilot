@@ -41,13 +41,12 @@ in
         mpv
         pillow
         pip
-        playsound
         pynput
         pyqt5
         pyqtgraph
         pyyaml
+        scikit-learn
         scipy
-        screeninfo
         websockets
       ]))
     ];
