@@ -2,7 +2,7 @@ json = require "json"
 
 -- global var
 processHandleFunscriptCopilot = nil
-status = "Funscript Copilot not running"
+status = "Copilot not running"
 updateCounter = 0
 
 
@@ -24,10 +24,8 @@ function binding.start_funscript_copilot()
     end
 
     scriptIdx = ofs.ActiveIdx()
-    local tmpFile = ofs.ExtensionDir() .. "/" .. tmpFileName
     local video = player.CurrentVideo()
 
-    print("tmpFile: ", tmpFile)
     print("video: ", video)
     print("currentScriptIdx: ", scriptIdx)
 
@@ -35,7 +33,7 @@ function binding.start_funscript_copilot()
     local args = {}
 
     if platform == "Linux" then
-        cmd = ofs.ExtensionDir() .. "nix_wrapper.sh"
+        cmd = ofs.ExtensionDir() .. "/nix_wrapper.sh"
     else
         print("ERROR: Platform Not Implemented (", platform, ")")
         return
@@ -49,7 +47,7 @@ function binding.start_funscript_copilot()
 
     processHandleFunscriptCopilot = Process.new(cmd, table.unpack(args))
 
-    status = "MTFG running"
+    status = "Copilot running"
 end
 
 
@@ -68,6 +66,7 @@ function update(delta)
     updateCounter = updateCounter + 1
     if processHandleFunscriptCopilot and not processHandleFunscriptCopilot:alive() then
         processHandleFunscriptCopilot = nil
+        status = "Copilot not running"
     end
 end
 
