@@ -48,6 +48,7 @@ in
         pyyaml
         scipy
         screeninfo
+        websockets
       ]))
     ];
 
