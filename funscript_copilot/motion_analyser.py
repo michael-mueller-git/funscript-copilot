@@ -3,6 +3,7 @@ import logging
 import websockets
 import json
 import os
+import time
 import cv2
 
 import numpy as np
@@ -190,9 +191,9 @@ class MotionAnalyser:
         all_data = []
         prediction_pca = [[] for _ in range(self.n_components)]
         turnpoints =  Turnpoints(self.fps)
+        start_time = time.time()
         while self.video.isOpened() and not self.stop:
             frame_number += 1
-            self.logger.debug(f"Process frame {frame_number}")
             success, frame = self.video.read()
             if not success:
                 self.logger.warning("Failed to read next frame")
@@ -202,6 +203,9 @@ class MotionAnalyser:
             if prev_frame is None:
                 prev_frame = frame
                 continue
+
+            if frame_number % 100 == 0:
+                self.logger.info("process frame %d", frame_number)
 
             flow = cv2.calcOpticalFlowFarneback(prev_frame, frame, None, 0.5, 3, 15, 3, 5, 1.2, 0)
             prev_frame= frame
@@ -222,11 +226,11 @@ class MotionAnalyser:
                         action = turnpoints.update(item)
                         if action is not None:
                             if not self.queue.full():
-                                # self.logger.info("enqueue action")
                                 self.queue.put(action)
 
 
         self.video.release()
+        self.logger.info("%d sps", int(frame_number / (time.time() - start_time)))
 
         if False:
             if self.n_components == 2:
