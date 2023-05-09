@@ -5,6 +5,7 @@ import json
 import os
 import time
 import cv2
+import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,6 +14,10 @@ from queue import Queue
 from threading import Thread
 from enum import Enum
 from sklearn.decomposition import IncrementalPCA
+
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib"))
+
+from funscript_toolbox.data.ffmpegstream import FFmpegStream, VideoInfo
 
 
 class EMA:
@@ -93,6 +98,15 @@ class MotionAnalyser:
         self.should_exit = False
         self.video_file = args.input
         self.video = cv2.VideoCapture(args.input)
+        self.video_info = FFmpegStream.get_video_info(args.input)
+        # TODO auto determine scaling factor
+        self.ffmpeg = FFmpegStream(args.input, {
+            "video_filter": "scale=${width}:${height}",
+            "parameter": {
+                "width": self.video_info.width//14,
+                "height": self.video_info.height//14
+            }
+        })
         self.fps = self.video.get(cv2.CAP_PROP_FPS)
         self.n_components = 2
         self.stop = False
@@ -167,7 +181,7 @@ class MotionAnalyser:
 
 
     def get_low_rank_adoption(self, frame) -> np.ndarray:
-        frame = cv2.resize(frame, None, fx=0.1, fy=0.1)
+        # frame = cv2.resize(frame, None, fx=0.1, fy=0.1)
         height, width = frame.shape[:2]
         if 2*height == width:
             # vr frame
@@ -192,10 +206,10 @@ class MotionAnalyser:
         prediction_pca = [[] for _ in range(self.n_components)]
         turnpoints =  Turnpoints(self.fps)
         start_time = time.time()
-        while self.video.isOpened() and not self.stop:
+        while self.ffmpeg.isOpen() and not self.stop:
             frame_number += 1
-            success, frame = self.video.read()
-            if not success:
+            frame = self.ffmpeg.read()
+            if frame is None:
                 self.logger.warning("Failed to read next frame")
                 break
 
@@ -229,7 +243,8 @@ class MotionAnalyser:
                                 self.queue.put(action)
 
 
-        self.video.release()
+        # self.ffmpeg.release()
+        self.ffmpeg.stop()
         self.logger.info("%d sps", int(frame_number / (time.time() - start_time)))
 
         if False:
