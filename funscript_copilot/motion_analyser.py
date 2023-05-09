@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
+from enum import Enum
 from sklearn.decomposition import IncrementalPCA
 
 
@@ -20,6 +21,59 @@ class EMA:
     def update(self, val: float) -> float:
         self.mean = ((1.0 - self.alpha) * self.mean) + (self.alpha * val)
         return self.mean
+
+
+class Turnpoints:
+
+    class Action(Enum):
+        Top = 1
+        Bottom = 2
+
+    def __init__(self, fps):
+        self.fps = fps
+        self.top = []
+        self.bottom = []
+        self.trace = []
+        self.prev_turnpoint = None
+        self.idx = 0
+
+    def update(self, val):
+        self.idx += 1
+        if self.prev_turnpoint is None:
+            self.prev_turnpoint = Turnpoints.Action.Top if val < 0.0 else Turnpoints.Action.Bottom
+            return
+
+        if self.prev_turnpoint == Turnpoints.Action.Top:
+            if val < 0.0:
+                self.bottom.append(self.idx)
+                self.trace.append((self.idx, Turnpoints.Action.Bottom))
+                self.prev_turnpoint = Turnpoints.Action.Bottom
+        elif self.prev_turnpoint == Turnpoints.Action.Bottom:
+            if val > 0.0:
+                self.top.append(self.idx)
+                self.trace.append((self.idx, Turnpoints.Action.Top))
+                self.prev_turnpoint = Turnpoints.Action.Top
+
+
+    def get_turnpoints_with_ms_pos(self):
+        frame_time = 1000.0 / self.fps
+        return {
+            'top': [x * frame_time for x in self.top],
+            'bottom': [x * frame_time for x in self.bottom]
+        }
+
+
+    def get_turnpoints_with_idx_pos(self):
+        return {
+            'top': self.top,
+            'bottom': self.bottom
+        }
+
+
+    def get_signal(self, bottom_val = 0, top_val = 100) -> tuple:
+        return ([x[0] for x in self.trace], [bottom_val if x[1] == Turnpoints.Action.Bottom else top_val for x in self.trace])
+
+
 
 
 class MotionAnalyser:
@@ -105,7 +159,7 @@ class MotionAnalyser:
         y_batch = []
         all_data = []
         prediction_pca = [[] for _ in range(self.n_components)]
-        prediction_svd = [[] for _ in range(self.n_components)]
+        turnpoints =  Turnpoints(self.fps)
         while self.video.isOpened() and not self.stop:
             frame_number += 1
             self.logger.debug(f"Process frame {frame_number}")
@@ -132,29 +186,19 @@ class MotionAnalyser:
                 y_batch = []
                 for i in range(self.n_components):
                     prediction_pca[i].extend(batch_prediction_pca[i])
-                    prediction_svd[i].extend(batch_prediction_svd[i,:])
+
+                if self.n_components == 2:
+                    relative_movement = np.array(batch_prediction_pca[0]) + np.array(batch_prediction_pca[1])
+                    for item in relative_movement:
+                        turnpoints.update(item)
+
 
         self.video.release()
 
         if self.n_components == 2:
-            result_pca = np.array(prediction_pca[0]) + np.array(prediction_pca[1])
-            result_svd = np.array(prediction_svd[0]) + np.array(prediction_svd[1])
-            result_pca = MotionAnalyser.scale(result_pca, -100, 100)
-            result_svd = MotionAnalyser.scale(result_svd, -100, 100)
-            pca_ema = EMA()
-            svd_ema = EMA()
-            pca_mean = [pca_ema.update(result_pca[i]) for i in range(len(result_pca))]
-            svd_mean = [svd_ema.update(result_svd[i]) for i in range(len(result_svd))]
-            _, _, real_svd = np.linalg.svd(np.transpose(np.array(all_data)), full_matrices=False)
-            real_svd = np.array(real_svd[:self.n_components,:])
-            real_svd = np.array(real_svd[0]) + np.array(real_svd[1])
-            real_svd = MotionAnalyser.scale(real_svd, -100, 100)
-            plt.plot(result_pca)
-            plt.plot(result_svd)
-            # plt.plot(pca_mean)
-            # plt.plot(svd_mean)
-            # plt.plot(real_svd)
-            plt.plot(self.gt_actions['x'], MotionAnalyser.scale(self.gt_actions['y'], -100, 100))
+            x, y = turnpoints.get_signal()
+            plt.plot(x, y)
+            plt.plot(self.gt_actions['x'], MotionAnalyser.scale(self.gt_actions['y'], 0, 100))
         else:
             for i in range(self.n_components):
                 plt.plot(prediction_pca[i])
