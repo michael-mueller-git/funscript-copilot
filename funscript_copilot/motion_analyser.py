@@ -8,6 +8,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
+from queue import Queue
+from threading import Thread
 from enum import Enum
 from sklearn.decomposition import IncrementalPCA
 
@@ -29,8 +31,11 @@ class Turnpoints:
         Top = 1
         Bottom = 2
 
-    def __init__(self, fps):
+    def __init__(self, fps, bottom_val = 0, top_val = 100):
         self.fps = fps
+        self.frame_time = 1000.0 / self.fps
+        self.bottom_val = bottom_val
+        self.top_val = top_val
         self.top = []
         self.bottom = []
         self.trace = []
@@ -41,25 +46,28 @@ class Turnpoints:
         self.idx += 1
         if self.prev_turnpoint is None:
             self.prev_turnpoint = Turnpoints.Action.Top if val < 0.0 else Turnpoints.Action.Bottom
-            return
+            return None
 
         if self.prev_turnpoint == Turnpoints.Action.Top:
             if val < 0.0:
                 self.bottom.append(self.idx)
                 self.trace.append((self.idx, Turnpoints.Action.Bottom))
                 self.prev_turnpoint = Turnpoints.Action.Bottom
+                return (self.idx*self.frame_time, self.bottom_val)
         elif self.prev_turnpoint == Turnpoints.Action.Bottom:
             if val > 0.0:
                 self.top.append(self.idx)
                 self.trace.append((self.idx, Turnpoints.Action.Top))
                 self.prev_turnpoint = Turnpoints.Action.Top
+                return (self.idx*self.frame_time, self.top_val)
+
+        return None
 
 
     def get_turnpoints_with_ms_pos(self):
-        frame_time = 1000.0 / self.fps
         return {
-            'top': [x * frame_time for x in self.top],
-            'bottom': [x * frame_time for x in self.bottom]
+            'top': [x * self.frame_time for x in self.top],
+            'bottom': [x * self.frame_time for x in self.bottom]
         }
 
 
@@ -70,8 +78,8 @@ class Turnpoints:
         }
 
 
-    def get_signal(self, bottom_val = 0, top_val = 100) -> tuple:
-        return ([x[0] for x in self.trace], [bottom_val if x[1] == Turnpoints.Action.Bottom else top_val for x in self.trace])
+    def get_signal(self) -> tuple:
+        return ([x[0] for x in self.trace], [self.bottom_val if x[1] == Turnpoints.Action.Bottom else self.top_val for x in self.trace])
 
 
 
@@ -90,6 +98,7 @@ class MotionAnalyser:
         self.batch_size = int(self.fps * 1.2)
         self.ipca = IncrementalPCA(n_components=self.n_components, batch_size=self.batch_size)
         self.load_gt()
+        self.queue = Queue(maxsize=1024)
 
 
     def load_gt(self):
@@ -116,7 +125,19 @@ class MotionAnalyser:
             welcome_msg = await websocket.recv()
             print(welcome_msg)
             while not self.should_exit:
-                await asyncio.sleep(1)
+                if self.queue.qsize() < 1:
+                    await asyncio.sleep(0.2)
+                else:
+                    item = self.queue.get()
+                    print("send", item)
+                    await websocket.send(json.dumps({
+                            "type": "command",
+                            "name": "add_action",
+                            "data": {
+                                "at": item[0] / 1000.0,
+                                "pos": int(item[1])
+                            }
+                        }))
 
     @staticmethod
     def scale(signal: list, lower: float = 0, upper: float = 99) -> list:
@@ -150,9 +171,15 @@ class MotionAnalyser:
         return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 
+    def run_ws_event_loop(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self.ws_event_loop())
+
     def start(self):
         self.logger.info("Start MotionAnalyser")
-        # asyncio.get_event_loop().run_until_complete(self.ws_event_loop())
+        ws_thread = Thread(target = self.run_ws_event_loop)
+        ws_thread.start()
 
         frame_number = 0
         prev_frame = None
@@ -190,22 +217,25 @@ class MotionAnalyser:
                 if self.n_components == 2:
                     relative_movement = np.array(batch_prediction_pca[0]) + np.array(batch_prediction_pca[1])
                     for item in relative_movement:
-                        turnpoints.update(item)
+                        action = turnpoints.update(item)
+                        if action is not None:
+                            if not self.queue.full():
+                                self.queue.put(action)
 
 
         self.video.release()
 
-        if self.n_components == 2:
-            x, y = turnpoints.get_signal()
-            plt.plot(x, y)
-            plt.plot(self.gt_actions['x'], MotionAnalyser.scale(self.gt_actions['y'], 0, 100))
-        else:
-            for i in range(self.n_components):
-                plt.plot(prediction_pca[i])
+        if False:
+            if self.n_components == 2:
+                x, y = turnpoints.get_signal()
+                plt.plot(x, y)
+                plt.plot(self.gt_actions['x'], MotionAnalyser.scale(self.gt_actions['y'], 0, 100))
+            else:
+                for i in range(self.n_components):
+                    plt.plot(prediction_pca[i])
 
-        plt.show()
+            plt.show()
 
         self.should_exit = True
-
 
 
