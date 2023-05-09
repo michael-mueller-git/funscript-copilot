@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib"))
 
 def setup_logging():
     logging.basicConfig(
-        level=os.getenv('LOG_LEVEL', "DEBUG"),
+        level=os.getenv('LOG_LEVEL', "INFO"),
         format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(stream=sys.stdout)
