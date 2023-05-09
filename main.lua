@@ -84,7 +84,7 @@ function gui()
     else
         if ofs.Button("Kill Copilot") then
             if platform == "Linux" then
-                os.execute("pkill -f funscript-copilot")
+                os.execute("pkill -f python3")
             end
         end
     end

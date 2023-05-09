@@ -121,23 +121,26 @@ class MotionAnalyser:
 
 
     async def ws_event_loop(self):
-        async with websockets.connect('ws://localhost:8080/ofs') as websocket:
-            welcome_msg = await websocket.recv()
-            print(welcome_msg)
-            while not self.should_exit:
-                if self.queue.qsize() < 1:
-                    await asyncio.sleep(0.2)
-                else:
-                    item = self.queue.get()
-                    print("send", item)
-                    await websocket.send(json.dumps({
-                            "type": "command",
-                            "name": "add_action",
-                            "data": {
-                                "at": item[0] / 1000.0,
-                                "pos": int(item[1])
-                            }
-                        }))
+        try:
+            async with websockets.connect('ws://localhost:8080/ofs') as websocket:
+                welcome_msg = await websocket.recv()
+                print(welcome_msg)
+                while not self.should_exit:
+                    if self.queue.qsize() < 1:
+                        await asyncio.sleep(0.2)
+                    else:
+                        item = self.queue.get()
+                        print("send", item)
+                        await websocket.send(json.dumps({
+                                "type": "command",
+                                "name": "add_action",
+                                "data": {
+                                    "at": item[0] / 1000.0,
+                                    "pos": int(item[1])
+                                }
+                            }))
+        except:
+            self.logger.warning("ws crashed")
 
     @staticmethod
     def scale(signal: list, lower: float = 0, upper: float = 99) -> list:
@@ -207,9 +210,8 @@ class MotionAnalyser:
 
             if len(y_batch) >= self.batch_size:
                 self.ipca.partial_fit(y_batch)
-                batch_prediction_pca = np.transpose(np.array(self.ipca.transform(y_batch)))
-                _, _, batch_prediction_svd = np.linalg.svd(np.transpose(np.array(y_batch)), full_matrices=False)
-                batch_prediction_svd = np.array(batch_prediction_svd[:self.n_components,:])
+                ipca_out = self.ipca.transform(y_batch)
+                batch_prediction_pca = np.transpose(np.array(ipca_out))
                 y_batch = []
                 for i in range(self.n_components):
                     prediction_pca[i].extend(batch_prediction_pca[i])
@@ -220,6 +222,7 @@ class MotionAnalyser:
                         action = turnpoints.update(item)
                         if action is not None:
                             if not self.queue.full():
+                                # self.logger.info("enqueue action")
                                 self.queue.put(action)
 
 

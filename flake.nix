@@ -1,14 +1,9 @@
-# usage: `nix develop --command zsh`
 {
-  description = "MTFG";
+  description = "funscript-copilot";
 
   inputs = {
-    nixpkgs = {
-        url = "github:NixOS/nixpkgs/nixos-22.05";
-      };
-      flake-utils = {
-        url = "github:numtide/flake-utils";
-      };
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -16,6 +11,7 @@
       (system:
         let pkgs = nixpkgs.legacyPackages.${system}; in
         {
+          formatter = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
           devShells.default = import ./shell.nix { inherit pkgs; };
         }
       );
