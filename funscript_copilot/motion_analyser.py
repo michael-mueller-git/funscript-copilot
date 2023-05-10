@@ -40,7 +40,7 @@ class Turnpoints:
     def update(self, val):
         self.idx += 1
         if self.prev_turnpoint is None:
-            self.prev_turnpoint = Turnpoints.Action.Top if val < 0.0 else Turnpoints.Action.Bottom
+            self.prev_turnpoint = Turnpoints.Action.Top if val > 0.0 else Turnpoints.Action.Bottom
             return None
 
         if self.prev_turnpoint == Turnpoints.Action.Top:
@@ -79,7 +79,7 @@ class MotionAnalyser:
         })
         self.n_components = 2
         self.stop = False
-        self.batch_size = int(self.video_info.fps * 1.2)
+        self.batch_size = int(self.video_info.fps * 1.1)
         self.ipca = IncrementalPCA(n_components=self.n_components, batch_size=self.batch_size)
         self.queue = Queue(maxsize=1024)
 
@@ -89,9 +89,12 @@ class MotionAnalyser:
             async with websockets.connect('ws://localhost:8080/ofs') as websocket:
                 welcome_msg = await websocket.recv()
                 print(welcome_msg)
-                while not self.should_exit:
+                while True:
                     if self.queue.qsize() < 1:
-                        await asyncio.sleep(0.2)
+                        if self.should_exit:
+                            return
+                        else:
+                            await asyncio.sleep(0.2)
                     else:
                         item = self.queue.get()
                         await websocket.send(json.dumps({
@@ -185,7 +188,6 @@ class MotionAnalyser:
                     if action is not None:
                         if not self.queue.full():
                             self.queue.put(action)
-
 
         self.ffmpeg.stop()
         self.logger.info("%d sps", int(frame_number / (time.time() - start_time)))
