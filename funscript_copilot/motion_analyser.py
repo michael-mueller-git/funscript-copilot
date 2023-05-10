@@ -68,7 +68,6 @@ class MotionAnalyser:
         self.logger = logging.getLogger(__name__)
         self.should_exit = False
         self.video_file = args.input
-        self.video = cv2.VideoCapture(args.input)
         self.video_info = FFmpegStream.get_video_info(args.input)
         scale = self.video_info.width // 256
         self.ffmpeg = FFmpegStream(args.input, {
@@ -78,10 +77,9 @@ class MotionAnalyser:
                 "height": self.video_info.height//scale
             }
         })
-        self.fps = self.video.get(cv2.CAP_PROP_FPS)
         self.n_components = 2
         self.stop = False
-        self.batch_size = int(self.fps * 1.2)
+        self.batch_size = int(self.video_info.fps * 1.2)
         self.ipca = IncrementalPCA(n_components=self.n_components, batch_size=self.batch_size)
         self.queue = Queue(maxsize=1024)
 
@@ -131,7 +129,6 @@ class MotionAnalyser:
 
 
     def get_low_rank_adoption(self, frame) -> np.ndarray:
-        # frame = cv2.resize(frame, None, fx=0.1, fy=0.1)
         height, width = frame.shape[:2]
         if 2*height == width:
             # vr frame
@@ -152,9 +149,8 @@ class MotionAnalyser:
         frame_number = 0
         prev_frame = None
         y_batch = []
-        all_data = []
-        prediction_pca = [[] for _ in range(self.n_components)]
-        turnpoints =  Turnpoints(self.fps)
+        # prediction_pca = [[] for _ in range(self.n_components)]
+        turnpoints =  Turnpoints(self.video_info.fps)
         start_time = time.time()
         while self.ffmpeg.isOpen() and not self.stop:
             frame_number += 1
@@ -174,26 +170,23 @@ class MotionAnalyser:
             flow = cv2.calcOpticalFlowFarneback(prev_frame, frame, None, 0.5, 3, 15, 3, 5, 1.2, 0)
             prev_frame= frame
             y_batch.append(np.array(flow[..., 1]).flatten())
-            all_data.append(np.array(flow[..., 1]).flatten())
 
             if len(y_batch) >= self.batch_size:
                 self.ipca.partial_fit(y_batch)
                 ipca_out = self.ipca.transform(y_batch)
                 batch_prediction_pca = np.transpose(np.array(ipca_out))
                 y_batch = []
-                for i in range(self.n_components):
-                    prediction_pca[i].extend(batch_prediction_pca[i])
+                # for i in range(self.n_components):
+                    # prediction_pca[i].extend(batch_prediction_pca[i])
 
-                if self.n_components == 2:
-                    relative_movement = np.array(batch_prediction_pca[0]) + np.array(batch_prediction_pca[1])
-                    for item in relative_movement:
-                        action = turnpoints.update(item)
-                        if action is not None:
-                            if not self.queue.full():
-                                self.queue.put(action)
+                relative_movement = np.array(batch_prediction_pca[0]) + np.array(batch_prediction_pca[1])
+                for item in relative_movement:
+                    action = turnpoints.update(item)
+                    if action is not None:
+                        if not self.queue.full():
+                            self.queue.put(action)
 
 
-        # self.ffmpeg.release()
         self.ffmpeg.stop()
         self.logger.info("%d sps", int(frame_number / (time.time() - start_time)))
 
