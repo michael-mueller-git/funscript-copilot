@@ -20,17 +20,6 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib"))
 from funscript_toolbox.data.ffmpegstream import FFmpegStream, VideoInfo
 
 
-class EMA:
-
-    def __init__(self, alpha = 0.05):
-        self.alpha = alpha
-        self.mean = 0
-
-    def update(self, val: float) -> float:
-        self.mean = ((1.0 - self.alpha) * self.mean) + (self.alpha * val)
-        return self.mean
-
-
 class Turnpoints:
 
     class Action(Enum):
@@ -70,24 +59,6 @@ class Turnpoints:
         return None
 
 
-    def get_turnpoints_with_ms_pos(self):
-        return {
-            'top': [x * self.frame_time for x in self.top],
-            'bottom': [x * self.frame_time for x in self.bottom]
-        }
-
-
-    def get_turnpoints_with_idx_pos(self):
-        return {
-            'top': self.top,
-            'bottom': self.bottom
-        }
-
-
-    def get_signal(self) -> tuple:
-        return ([x[0] for x in self.trace], [self.bottom_val if x[1] == Turnpoints.Action.Bottom else self.top_val for x in self.trace])
-
-
 
 
 class MotionAnalyser:
@@ -99,12 +70,12 @@ class MotionAnalyser:
         self.video_file = args.input
         self.video = cv2.VideoCapture(args.input)
         self.video_info = FFmpegStream.get_video_info(args.input)
-        # TODO auto determine scaling factor
+        scale = self.video_info.width // 256
         self.ffmpeg = FFmpegStream(args.input, {
             "video_filter": "scale=${width}:${height}",
             "parameter": {
-                "width": self.video_info.width//14,
-                "height": self.video_info.height//14
+                "width": self.video_info.width//scale,
+                "height": self.video_info.height//scale
             }
         })
         self.fps = self.video.get(cv2.CAP_PROP_FPS)
@@ -112,27 +83,7 @@ class MotionAnalyser:
         self.stop = False
         self.batch_size = int(self.fps * 1.2)
         self.ipca = IncrementalPCA(n_components=self.n_components, batch_size=self.batch_size)
-        self.load_gt()
         self.queue = Queue(maxsize=1024)
-
-
-    def load_gt(self):
-        self.gt_funscript_path = '.'.join(self.video_file.split('.')[:-1]) + ".funscript"
-        if not os.path.exists(self.gt_funscript_path):
-            self.logger.info("ground truth funscript %s not exists", self.gt_funscript_path)
-            self.gt_actions = {'x':[], 'y':[]}
-            return
-
-        self.logger.info("load gt funscript %s", self.gt_funscript_path)
-        with open(self.gt_funscript_path, "r") as f:
-            self.gt_funscript = json.load(f)
-
-        frame_time = 1000.0 / self.fps
-
-        self.gt_actions = {
-            'x': [action["at"]/frame_time for action in self.gt_funscript["actions"]],
-            'y': [action["pos"] for action in self.gt_funscript["actions"]]
-        }
 
 
     async def ws_event_loop(self):
@@ -145,7 +96,6 @@ class MotionAnalyser:
                         await asyncio.sleep(0.2)
                     else:
                         item = self.queue.get()
-                        print("send", item)
                         await websocket.send(json.dumps({
                                 "type": "command",
                                 "name": "add_action",
@@ -246,17 +196,6 @@ class MotionAnalyser:
         # self.ffmpeg.release()
         self.ffmpeg.stop()
         self.logger.info("%d sps", int(frame_number / (time.time() - start_time)))
-
-        if False:
-            if self.n_components == 2:
-                x, y = turnpoints.get_signal()
-                plt.plot(x, y)
-                plt.plot(self.gt_actions['x'], MotionAnalyser.scale(self.gt_actions['y'], 0, 100))
-            else:
-                for i in range(self.n_components):
-                    plt.plot(prediction_pca[i])
-
-            plt.show()
 
         self.should_exit = True
 
