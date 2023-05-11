@@ -74,7 +74,7 @@ end
 function gui()
     ofs.Text("Status: "..status)
     ofs.Separator()
-    ofs.Text("Action:")
+    ofs.Text("Application:")
 
     ofs.SameLine()
     if not processHandleFunscriptCopilot then
@@ -87,5 +87,23 @@ function gui()
                 os.execute("pkill -f python3")
             end
         end
+    end
+
+    ofs.Separator()
+    ofs.Text("Control:")
+
+    ofs.SameLine()
+    if ofs.Button("Start") then
+        player.WebsocketSend("copilot", "{\"action\": \"start\", \"startPosition\": " .. tostring(player.CurrentTime()) .. "}")
+    end
+
+    ofs.SameLine()
+    if ofs.Button("Stop") then
+        player.WebsocketSend("copilot", "{\"action\": \"stop\"}")
+    end
+
+    ofs.SameLine()
+    if ofs.Button("Exit") then
+        player.WebsocketSend("copilot", "{\"action\": \"exit\"}")
     end
 end
