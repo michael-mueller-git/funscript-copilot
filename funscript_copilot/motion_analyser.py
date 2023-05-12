@@ -143,6 +143,7 @@ class MotionAnalyser:
     def run_ws_event_loop(self):
         async def ws_handler():
             async with websockets.connect('ws://localhost:8080/ofs') as websocket:
+                websocket.ping_timeout = 3600*24
                 consumer_task = asyncio.ensure_future(self.ws_consumer_handler(websocket))
                 producer_task = asyncio.ensure_future(self.ws_producer_handler(websocket))
                 _, pending = await asyncio.wait(
