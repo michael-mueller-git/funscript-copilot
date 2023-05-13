@@ -94,7 +94,7 @@ function gui()
 
     ofs.SameLine()
     if ofs.Button("Start") then
-        player.WebsocketSend("copilot", "{\"action\": \"start\", \"startPosition\": " .. tostring(player.CurrentTime()) .. "}")
+        player.WebsocketSend("copilot", "{\"action\": \"start\", \"startPosition\": " .. tostring(player.CurrentTime()) .. ", \"scriptIdx\": " .. tostring(ofs.ActiveIdx()-1) .. "}")
     end
 
     ofs.SameLine()

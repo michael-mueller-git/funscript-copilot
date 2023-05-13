@@ -67,6 +67,7 @@ class MotionAnalyser:
         self.n_components = 2
         self.stop = False
         self.next_start_in_ms = None
+        self.next_script_index = None
         self.batch_size = int(self.video_info.fps * 1.1)
         self.ipca = IncrementalPCA(n_components=self.n_components, batch_size=self.batch_size)
         self.queue = Queue(maxsize=1024)
@@ -110,6 +111,8 @@ class MotionAnalyser:
                 self.logger.info("ws event request start")
                 self.next_start_in_ms = msg["data"]["message"]["startPosition"] * 1000.0 \
                         if "startPosition" in msg["data"]["message"] else 0.0
+                self.next_script_index = msg["data"]["message"]["scriptIdx"] \
+                        if "scriptIdx" in msg["data"]["message"] else None
 
 
     async def ws_producer_handler(self, websocket):
@@ -121,15 +124,19 @@ class MotionAnalyser:
                     await asyncio.sleep(0.2)
             else:
                 item = self.queue.get()
-                # self.logger.info("send action %s", str(item))
-                await websocket.send(json.dumps({
-                        "type": "command",
-                        "name": "add_action",
-                        "data": {
-                            "at": item[0] / 1000.0,
-                            "pos": int(item[1])
-                        }
-                    }))
+                msg = {
+                    "type": "command",
+                    "name": "add_action",
+                    "data": {
+                        "at": item[1][0] / 1000.0,
+                        "pos": int(item[1][1])
+                    }
+                }
+
+                if item[0] is not None:
+                    msg["scriptIndex"] = item[0]
+
+                await websocket.send(json.dumps(msg))
 
 
     def get_relevant_data_from_frame(self, frame) -> np.ndarray:
@@ -168,12 +175,12 @@ class MotionAnalyser:
             if self.next_start_in_ms is None:
                 time.sleep(0.2)
             else:
-                start_timestamp_in_ms = self.next_start_in_ms
-                self.next_start_in_ms = None
-                self.generate_actions(start_timestamp_in_ms)
+                script_index, start_timestamp_in_ms = self.next_script_index, self.next_start_in_ms
+                self.next_script_index, self.next_start_in_ms = None, None
+                self.generate_actions(start_timestamp_in_ms, script_index)
 
 
-    def generate_actions(self, start_timestamp_in_ms: float = 0.0):
+    def generate_actions(self, start_timestamp_in_ms: float = 0.0, script_index = None):
         self.stop = False
         self.logger.info("Start MotionAnalyser @ %d ms", round(start_timestamp_in_ms))
         scale = self.video_info.width // 256
@@ -220,7 +227,7 @@ class MotionAnalyser:
                     action = turnpoints.update(item)
                     if action is not None:
                         if not self.queue.full():
-                            self.queue.put(action)
+                            self.queue.put((script_index, action))
 
         ffmpeg.stop()
         self.logger.info("stop after %d samples (%d SPS)", sample_counter, int(sample_counter / (time.time() - start_time)))
