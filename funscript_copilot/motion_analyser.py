@@ -35,7 +35,7 @@ class Turnpoints:
         self.bottom_val = bottom_val
         self.top_val = top_val
         self.prev_turnpoint = None
-        self.idx = 0
+        self.idx = 1 # start frame not included
 
     def update(self, val):
         self.idx += 1
@@ -222,7 +222,7 @@ class MotionAnalyser:
                 ipca_out = self.ipca.transform(y_batch)
                 batch_prediction_pca = np.transpose(np.array(ipca_out))
                 y_batch = []
-                relative_movement = np.array(batch_prediction_pca[0]) + np.array(batch_prediction_pca[1])
+                relative_movement = np.array(batch_prediction_pca[0]) - np.array(batch_prediction_pca[1])
                 for item in relative_movement:
                     action = turnpoints.update(item)
                     if action is not None:
