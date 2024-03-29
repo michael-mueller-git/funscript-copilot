@@ -23,6 +23,10 @@ def entrypoint():
 
     setup_logging()
 
+    if args.input is None:
+        print("ERROR: Missing Video File Parameter")
+        sys.exit()
+
     if not os.path.exists(args.input):
         raise FileNotFoundError(args.input)
 
