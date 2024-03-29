@@ -9,7 +9,10 @@ PACKAGE = 'funscript_copilot'
 DESCRIPTION = "A tool to create funscripts"
 VERSION = "0.0.0"
 
-src = []
+src = [os.path.join('..', x) \
+            for x in git.Git('.').ls_files().splitlines() \
+            if x.startswith(PACKAGE+os.sep) or x.startswith("lib") \
+            and os.path.exists(x)]
 
 setuptools.setup(
     name=PACKAGE.replace('_', '-'),
