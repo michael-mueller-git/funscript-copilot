@@ -17,6 +17,10 @@ end
 platform = get_platform()
 
 
+function exists(file)
+   return os.rename(file, file)
+end
+
 function binding.start_funscript_copilot()
     if processHandleFunscriptCopilot then
         print('Funscript Copilot already running')
@@ -99,6 +103,7 @@ function gui()
     else
         if ofs.Button("Kill Copilot") then
             if platform == "Linux" then
+                -- TODO this is stupid
                 os.execute("pkill -f python3")
             end
         end
