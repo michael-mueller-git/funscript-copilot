@@ -10,10 +10,15 @@ PACKAGE = 'funscript_copilot'
 DESCRIPTION = "A tool to create funscripts"
 VERSION = "0.0.0"
 
-src = [os.path.join('..', x) \
-            for x in git.Git('.').ls_files().splitlines() \
-            if x.startswith(PACKAGE+os.sep) or x.startswith("lib") \
-            and os.path.exists(x)]
+try:
+    src = [os.path.join('..', x) \
+                for x in git.Git('.').ls_files().splitlines() \
+                if x.startswith(PACKAGE+os.sep) or x.startswith("lib") \
+                and os.path.exists(x)]
+except:
+    print("Warning fallback to glob")
+    src = [os.path.join('..', f) for f in glob.glob(PACKAGE+os.sep+"**"+os.sep+"*", recursive=True)]
+    src += [os.path.join('..', f) for f in glob.glob(lib+os.sep+"**"+os.sep+"*", recursive=True)]
 
 setuptools.setup(
     name=PACKAGE.replace('_', '-'),
