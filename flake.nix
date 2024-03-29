@@ -47,8 +47,9 @@
         src = pkgs.fetchFromGitHub {
           owner = "michael-mueller-git";
           repo = "funscript-copilot";
-          rev = "14f4e36acbf8147c2087d6f31784aff0f02bcdf9";
-          sha256 = "sha256-bfbE8PNL5yvYrHuTbm3BRnm4SCXXHZzrhRH1lSEb9Cs=";
+          rev = "047f2ce0f6d31717c78202bbe10581f88a321b4";
+          # NOTE: change hash to refresh
+          sha256 = "sha256-3hr8/8At/JKRuXLcfNBZJWBhwZZCVotpCZ7s6xya6OA=";
           fetchSubmodules = true;
         };
         propagatedBuildInputs = dependencies;

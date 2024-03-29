@@ -15,7 +15,7 @@ setuptools.setup(
     author="btw i use arch",
     author_email="git@local",
     description=DESCRIPTION,
-    long_description=long_description,
+    long_description=DESCRIPTION,
     long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python :: 3",
