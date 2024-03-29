@@ -60,7 +60,7 @@ function binding.start_funscript_copilot()
 
     table.insert(args, video)
     table.insert(args, "--port")
-    table.insert(args, "8080")
+    table.insert(args, player.GetWebsocketPort())
 
     print("cmd: ", cmd)
     print("args: ", table.unpack(args))
@@ -94,22 +94,27 @@ end
 function gui()
     ofs.Text("Status: "..status)
     ofs.Separator()
-    ofs.Text("Required: Menu 'View':'Websocket API':'Server active' checked")
-    ofs.Text("Application:")
 
-    ofs.SameLine()
-    if not processHandleFunscriptCopilot then
-        if ofs.Button("Start Copilot") then
-            binding.start_funscript_copilot()
-        end
-    else
-        if ofs.Button("Kill Copilot") then
-            if platform == "Linux" then
-                -- TODO this is stupid
-                os.execute("pkill -f python3")
+    if player.IsWebsocketActive() then
+        ofs.Text("Application:")
+
+        ofs.SameLine()
+        if not processHandleFunscriptCopilot then
+            if ofs.Button("Start Copilot") then
+                binding.start_funscript_copilot()
+            end
+        else
+            if ofs.Button("Kill Copilot") then
+                if platform == "Linux" then
+                    -- TODO this is stupid
+                    os.execute("pkill -f python3")
+                end
             end
         end
+    else
+        ofs.Text("Required: Menu 'View':'Websocket API':'Server active' checked")
     end
+    
 
     ofs.Separator()
     ofs.Text("Control:")
