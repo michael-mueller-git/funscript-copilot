@@ -26,7 +26,7 @@ setuptools.setup(
             str(PACKAGE.replace('_', '-') + '=' + PACKAGE + '.__main__:main'),
         ]
     },
-    install_requires=requirements,
+    install_requires=[],
     packages=[PACKAGE],
     package_data={PACKAGE: src},
     data_files=[(os.path.join('/', PACKAGE, os.path.dirname(x)), [x]) for x in docs],
