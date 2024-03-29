@@ -2,6 +2,7 @@ import setuptools
 import os
 import glob
 import sys
+import git # pip install gitpython
 
 # THIS IS ONLY A DUMMY SETUP.PY!!
 
