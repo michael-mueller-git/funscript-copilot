@@ -31,7 +31,7 @@ setuptools.setup(
     install_requires=[],
     packages=[PACKAGE],
     package_data={PACKAGE: src},
-    data_files=[(os.path.join('/', PACKAGE, os.path.dirname(x)), [x]) for x in docs],
+    data_files=[],
     python_requires=">=3.6",
     setup_requires=['wheel'],
 )
