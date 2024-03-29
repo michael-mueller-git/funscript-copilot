@@ -33,7 +33,22 @@ function binding.start_funscript_copilot()
     local args = {}
 
     if platform == "Linux" then
-        cmd = ofs.ExtensionDir() .. "/nix_wrapper.sh"
+        if exists(ofs.ExtensionDir() .. "/nix_wrapper.sh") then
+            print("nix: use local repository")
+            os.execute("chmod +x \"" .. ofs.ExtensionDir() .. "/nix_wrapper.sh" .. "\"")
+            cmd = ofs.ExtensionDir() .. "/nix_wrapper.sh"
+        else
+            print("nix: use remote repository")
+            file = io.open("/tmp/nix-funscript-copilot.sh", "w")
+            file:write("#!/usr/bin/env bash\n")
+            file:write("unset LD_LIBRARY_PATH\n")
+            file:write("nix run github:michael-mueller-git/funscript-copilot --refresh -- \"$@\"\n")
+            file:close()
+    
+            os.execute("chmod +x /tmp/nix-funscript-copilot.sh")
+        
+            cmd = "/tmp/nix-funscript-copilot.sh"
+        end
     else
         print("ERROR: Platform Not Implemented (", platform, ")")
         return

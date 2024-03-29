@@ -29,3 +29,6 @@ def entrypoint():
     motion_analyser = MotionAnalyser(args)
     motion_analyser.start()
 
+def main():
+    """ CLI Main Function """
+    entrypoint()
