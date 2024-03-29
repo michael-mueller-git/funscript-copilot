@@ -18,7 +18,7 @@ try:
 except:
     print("Warning fallback to glob")
     src = [os.path.join('..', f) for f in glob.glob(PACKAGE+os.sep+"**"+os.sep+"*", recursive=True)]
-    src += [os.path.join('..', f) for f in glob.glob(lib+os.sep+"**"+os.sep+"*", recursive=True)]
+    src += [os.path.join('..', f) for f in glob.glob("lib"+os.sep+"**"+os.sep+"*", recursive=True)]
 
 setuptools.setup(
     name=PACKAGE.replace('_', '-'),
