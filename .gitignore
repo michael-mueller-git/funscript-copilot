@@ -3,3 +3,4 @@
 *.png
 *.funscript
 tests/
+__pycache__/

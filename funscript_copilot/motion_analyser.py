@@ -61,6 +61,7 @@ class MotionAnalyser:
         self.args = args
         self.logger = logging.getLogger(__name__)
         self.should_exit = False
+        self.port = args.port
         self.video_file = args.input
         self.video_info = FFmpegStream.get_video_info(args.input)
         self.frame_time_in_ms = 1000.0 / self.video_info.fps
@@ -149,7 +150,9 @@ class MotionAnalyser:
 
     def run_ws_event_loop(self):
         async def ws_handler():
-            async with websockets.connect('ws://localhost:8080/ofs') as websocket:
+            ws_url = f'ws://localhost:{self.port}/ofs'
+            print("Websocket connect to", ws_url)
+            async with websockets.connect(ws_url) as websocket:
                 websocket.ping_timeout = 3600*24
                 consumer_task = asyncio.ensure_future(self.ws_consumer_handler(websocket))
                 producer_task = asyncio.ensure_future(self.ws_producer_handler(websocket))

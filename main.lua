@@ -58,8 +58,9 @@ function binding.start_funscript_copilot()
         return
     end
 
-    table.insert(args, "--input")
     table.insert(args, video)
+    table.insert(args, "--port")
+    table.insert(args, "8080")
 
     print("cmd: ", cmd)
     print("args: ", table.unpack(args))
@@ -93,6 +94,7 @@ end
 function gui()
     ofs.Text("Status: "..status)
     ofs.Separator()
+    ofs.Text("Required: Menu 'View':'Websocket API':'Server active' checked")
     ofs.Text("Application:")
 
     ofs.SameLine()

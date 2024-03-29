@@ -18,14 +18,11 @@ def setup_logging():
 
 def entrypoint():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", type = str, help = "Video File")
+    parser.add_argument("input", type = str, help = "Video File")
+    parser.add_argument("-p", "--port", type = int, default = 8080, help = "Websocket Port")
     args = parser.parse_args()
 
     setup_logging()
-
-    if args.input is None:
-        print("ERROR: Missing Video File Parameter")
-        sys.exit()
 
     if not os.path.exists(args.input):
         raise FileNotFoundError(args.input)
