@@ -9,6 +9,8 @@ PACKAGE = 'funscript_copilot'
 DESCRIPTION = "A tool to create funscripts"
 VERSION = "0.0.0"
 
+src = []
+
 setuptools.setup(
     name=PACKAGE.replace('_', '-'),
     version=VERSION.replace('v', ''),
