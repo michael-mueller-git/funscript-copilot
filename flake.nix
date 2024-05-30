@@ -2,7 +2,7 @@
   description = "funscript-copilot";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
   };
 
   outputs = { self, nixpkgs, ... }:
@@ -23,6 +23,8 @@
           customPythonPackages.pkgs.websockets
           customPythonPackages.pkgs.scikit-learn
           customPythonPackages.pkgs.GitPython
+          customPythonPackages.pkgs.onnxruntime
+          customPythonPackages.pkgs.filterpy
         ]))
       ];
       libPath = pkgs.lib.makeLibraryPath dependencies;
