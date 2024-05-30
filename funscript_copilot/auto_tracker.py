@@ -1,6 +1,7 @@
 import logging
 import cv2
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from funscript_toolbox.data.ffmpegstream import FFmpegStream, VideoInfo
@@ -55,9 +56,12 @@ class AutoTracker:
         ) 
 
         detector = NudeDetector()
-        tracker = OCSort(det_thresh=0.30, max_age=10, min_hits=2)
-
+        tracker = OCSort(det_thresh=0.60, max_age=0, min_hits=7)
+        y = {}
+        
+        num = 0
         while ffmpeg.isOpen() and not self.stop:
+            num += 1
             frame = ffmpeg.read()
             if frame is None:
                 self.logger.warning("Failed to read next frame")
@@ -66,7 +70,7 @@ class AutoTracker:
             h, w = frame.shape[:2]
             detections = detector.detect(frame)
             detections = [d for d in detections if d["class"] in KEEP]
-            print(detections)
+            # print(detections)
             xyxyc = np.array([[d['box'][0], d['box'][1], d['box'][0]+d['box'][2], d['box'][1]+d['box'][3], d['score']] for d in detections])
             _ = tracker.update(xyxyc, (h, w), (h, w))
 
@@ -86,6 +90,15 @@ class AutoTracker:
                       1,
                       2)
 
+                    if track_id in y:
+                        y[track_id]['y'].append(y1+(y2-y1)/2)
+                        y[track_id]['t'].append(num)
+                    else:
+                        y[track_id] = {
+                            'y': [y1+(y2-y1)/2],
+                            't': [num]
+                        }
+
                 cv2.imshow("preview", frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
@@ -93,3 +106,7 @@ class AutoTracker:
         cv2.destroyAllWindows()
         ffmpeg.stop()
 
+        for k in y:
+            plt.plot(y[k]['t'], y[k]['y'])
+
+        plt.show()
