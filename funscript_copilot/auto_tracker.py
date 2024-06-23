@@ -11,16 +11,12 @@ from funscript_toolbox.algorithms.ppca import PPCA
 from scipy.interpolate import interp1d
 from funscript_toolbox.ui.opencvui import OpenCV_GUI, OpenCV_GUI_Parameters
 from funscript_toolbox.data.signal import Signal, SignalParameter
-
+from funscript_copilot.ws_com import WS
 
 class AutoTracker:
     def __init__(self, args):
         self.args = args
         self.logger = logging.getLogger(__name__)
-        self.should_exit = False
-        self.port = args.port
-        self.stop = False
-        self.preview = True
         self.video_file = args.input
         self.video_info = FFmpegStream.get_video_info(args.input)
         self.frame_time_in_ms = 1000.0 / self.video_info.fps
@@ -29,9 +25,13 @@ class AutoTracker:
             skip_frames = 0,
             end_frame_number = self.video_info.length
         ))
+        self.frame_time_in_ms = 1000.0 / self.video_info.fps
+        self.ws = WS(args.port)
 
+    def start(self):
+        self.ws.execute(self.generate_actions)
 
-    def start(self, start_timestamp_in_ms = 0):
+    def generate_actions(self, start_timestamp_in_ms, script_index):
         first_frame = FFmpegStream.get_frame(self.video_file, start_timestamp_in_ms)
         projection_keys = list(self.ui.projection_config.keys())
         idx = self.ui.menu("Video Projection", projection_keys) - 1
@@ -51,7 +51,7 @@ class AutoTracker:
         num = 0
         self.ui.clear_keypress_queue()
         reason = "End of Stream"
-        while ffmpeg.isOpen() and not self.stop:
+        while ffmpeg.isOpen() and not self.ws.stop:
             num += 1
             frame = ffmpeg.read()
             if frame is None:
@@ -138,8 +138,13 @@ class AutoTracker:
 
         result_score = [val for idx,val in enumerate(score) if idx in result_idx]
 
-        plt.plot(x2,y2)
-        plt.plot(result_idx, result_score)
-        plt.show()
+        if False:
+            plt.plot(x2,y2)
+            plt.plot(result_idx, result_score)
+            plt.show()
+
+        for idx, val in enumerate(score):
+            if idx in result_idx:
+                self.ws.queue.put((script_index, (start_timestamp_in_ms + idx*self.frame_time_in_ms, val)))
 
 
