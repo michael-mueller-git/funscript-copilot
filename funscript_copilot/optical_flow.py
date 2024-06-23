@@ -20,7 +20,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib"))
 
 from funscript_toolbox.data.ffmpegstream import FFmpegStream, VideoInfo
 from funscript_copilot.ws_com import WS
-
+from funscript_copilot.Incremental_PCA import CCIPCA
 
 class Turnpoints:
 
@@ -68,7 +68,7 @@ class MotionAnalyser:
         self.frame_time_in_ms = 1000.0 / self.video_info.fps
         self.n_components = 2
         self.batch_size = int(self.video_info.fps * 1.1)
-        self.ipca = IncrementalPCA(n_components=self.n_components, batch_size=self.batch_size)
+        self.ipca = CCIPCA(n_components=self.n_components)
         self.ws = WS(args.port)
         print("sklearn", sklearn.__version__)
 
@@ -120,7 +120,8 @@ class MotionAnalyser:
 
             if len(y_batch) >= self.batch_size:
                 # TODO hangs here in newer nix pkgs
-                self.ipca.partial_fit(y_batch)
+                # self.ipca.partial_fit(y_batch)
+                self.ipca.fit(y_batch)
                 ipca_out = self.ipca.transform(y_batch)
                 batch_prediction_pca = np.transpose(np.array(ipca_out))
                 y_batch = []

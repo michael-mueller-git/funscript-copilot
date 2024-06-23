@@ -11,12 +11,6 @@
       pkgs = import nixpkgs {
         system = "${system}";
       };
-      pinned = import
-        (builtins.fetchTarball {
-          url = "https://github.com/nixos/nixpkgs/tarball/8d447c5626cfefb9b129d5b30103344377fe09bc";
-          sha256 = "sha256:0qaw76phpm6frh6kmf1xrn59vv52ys2b30r1qpg2jf108224nj49";
-        }){ system = "x86_64-linux"; };
-      
       dependencies = [
         (pkgs.python310.withPackages (p: with p; [
           customPythonPackages.pkgs.opencv4
@@ -32,8 +26,8 @@
           customPythonPackages.pkgs.filterpy
           customPythonPackages.pkgs.pandas
           customPythonPackages.pkgs.pynput
+          customPythonPackages.pkgs.scikit-learn
         ]))
-        pinned.python310Packages.scikit-learn
       ];
       libPath = pkgs.lib.makeLibraryPath dependencies;
       binPath = pkgs.lib.makeBinPath dependencies;
