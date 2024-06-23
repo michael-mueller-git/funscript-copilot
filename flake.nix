@@ -26,6 +26,7 @@
           customPythonPackages.pkgs.onnxruntime
           customPythonPackages.pkgs.filterpy
           customPythonPackages.pkgs.pandas
+          customPythonPackages.pkgs.pynput
         ]))
       ];
       libPath = pkgs.lib.makeLibraryPath dependencies;

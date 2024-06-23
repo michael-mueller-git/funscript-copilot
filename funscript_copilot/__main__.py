@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 import logging
+import platform
 
 from funscript_copilot.optical_flow import MotionAnalyser
 from funscript_copilot.auto_tracker import AutoTracker
@@ -30,6 +31,12 @@ def entrypoint():
 
     if not os.path.exists(args.input):
         raise FileNotFoundError(args.input)
+
+    if platform.system().lower().startswith("linux") or os.path.abspath(__file__).startswith("/nix"):
+        # pynput does not work well with native wayland so we use xwayland to get proper keyboard inputs
+        if os.environ.get('DISPLAY'):
+            print("Warning: Force QT_QPA_PLATFORM=xcb for better user experience")
+            os.environ['QT_QPA_PLATFORM'] = "xcb"
 
     match args.method: 
         case 'dense-optical-flow':
