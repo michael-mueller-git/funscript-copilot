@@ -4,3 +4,4 @@
 *.funscript
 tests/
 __pycache__/
+result

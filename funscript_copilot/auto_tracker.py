@@ -3,10 +3,13 @@ import cv2
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from funscript_toolbox.data.ffmpegstream import FFmpegStream, VideoInfo
 from funscript_toolbox.detectors.nudenet import NudeDetector
+from funscript_toolbox.detectors.yolov10 import YOLOv10
 from funscript_toolbox.trackers.ocsort.ocsort import OCSort
+from funscript_toolbox.algorithms.ppca import PPCA
 
 KEEP = [
     "FEMALE_GENITALIA_COVERED",
@@ -43,10 +46,10 @@ class AutoTracker:
             video_path = self.video_file,
             config = { "video_filter": "v360=input=he:in_stereo=sbs:pitch=${pitch}:yaw=${yaw}:roll=${roll}:output=flat:d_fov=${fov}:w=${width}:h=${height}",
                 "parameter": {
-                    "width": 512,
-                    "height": 512,
-                    "fov": 120,
-                    "pitch": -10,
+                    "width": 640,
+                    "height": 640,
+                    "fov": 90,
+                    "pitch": -40,
                     "yaw": 0,
                     "roll": 0
                 }
@@ -55,10 +58,12 @@ class AutoTracker:
             start_frame = round(start_timestamp_in_ms / self.frame_time_in_ms)
         ) 
 
-        detector = NudeDetector()
+        detector = YOLOv10(0.6)
+        # detector = NudeDetector()
         tracker = OCSort(det_thresh=0.60, max_age=0, min_hits=7)
         y = {}
         
+        first = True
         num = 0
         while ffmpeg.isOpen() and not self.stop:
             num += 1
@@ -68,8 +73,13 @@ class AutoTracker:
                 break
 
             h, w = frame.shape[:2]
-            detections = detector.detect(frame)
-            detections = [d for d in detections if d["class"] in KEEP]
+            _, detections = detector.detect(frame)
+            print(detections)
+
+            if len(detections) == 0:
+                continue
+
+            # detections = [d for d in detections if d["class"] in KEEP]
             # print(detections)
             xyxyc = np.array([[d['box'][0], d['box'][1], d['box'][0]+d['box'][2], d['box'][1]+d['box'][3], d['score']] for d in detections])
             _ = tracker.update(xyxyc, (h, w), (h, w))
@@ -106,7 +116,47 @@ class AutoTracker:
         cv2.destroyAllWindows()
         ffmpeg.stop()
 
+        diff = {}
         for k in y:
-            plt.plot(y[k]['t'], y[k]['y'])
+            if len(y[k]['t']) > 2:
+                diff[k] = {
+                    'd': np.diff(y[k]['y'], 1).tolist(),
+                    't': y[k]['t'][1:]
+                }
 
-        plt.show()
+        # TODO when handle same id returns later and has nones in between
+        arr = []
+        for k in diff:
+            # print(k , diff[k])
+            arr.append([None for _ in range(diff[k]['t'][0])] + diff[k]['d'] + [None for _ in range(num-diff[k]['t'][-1])])
+
+        arr = np.transpose(np.array(arr, dtype=float))
+        # print(arr)
+
+        df = pd.DataFrame(arr)
+        cov = df.cov()
+        x = pd.DataFrame(cov.values[~np.eye(cov.shape[0],dtype=bool)])
+        max_idx = x.idxmax(skipna=True)
+        column = int(max_idx) // int(cov.shape[0])
+        row = int(max_idx) % int(cov.shape[0]) + 1 + column
+        print(cov)
+        print("found", column, row)
+
+        #print(arr)
+        #_, _, _, principalComponents, _ = PPCA(arr, d=1)
+        #print(principalComponents.tolist())
+        #merged = [item[0] for item in principalComponents.tolist()]
+#
+        #plt.plot([item[0] for item in principalComponents.tolist()])
+        # plt.plot([item[1] for item in principalComponents.tolist()])
+
+
+
+        # for k in y:
+            #plt.plot(y[k]['t'], y[k]['y'])
+            # plt.plot(y[k]['t'][1:], np.diff(y[k]['y'], 1).tolist())
+            #x = PPCA(2)
+            # _, _, _, principalComponents, _ = PPCA(np.transpose(np.array([self.result[k] for k in self.result.keys()], dtype=float)), d=1)
+            # merged = [item[0] for item in principalComponents.tolist()]
+
+        #plt.show()
