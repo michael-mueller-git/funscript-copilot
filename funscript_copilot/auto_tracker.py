@@ -68,8 +68,8 @@ class AutoTracker:
         ffmpeg.stop()
 
         fh  = interp1d(x, y, kind = 'quadratic')
-        x2 = [x for x in range(min(x), max(x))]
-        y2 = [float(fh(x)) for x in x2]
+        x2 = [i for i in range(min(x), max(x))]
+        y2 = [float(fh(i)) for i in x2]
         
         w = 3
         avg = np.convolve(y2, np.ones(int(w*2)) / (w*2), 'valid')
