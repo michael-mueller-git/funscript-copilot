@@ -8,3 +8,9 @@ Collection of funscript copilot scripts.
 ## Setup
 
 Currently this project only support Linux via [Nix package manager](https://nixos.org/download.html). In Addition you need to install [my Fork of OFS](https://github.com/michael-mueller-git/OFS) which supports add actions via websocket functions. The extension is available in the OFS lua extension menu when you install [my Fork of OFS](https://github.com/michael-mueller-git/OFS) via nix.
+
+## Notes
+
+- Currently nothing is working in the public respository!
+- `auto-tracker`: Is missing the model in the public repository
+- `dense-optical-flow`: sklearn pca is broken for the pinned commit and takes 1000x times longer than the old package version!
