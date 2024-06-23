@@ -47,13 +47,13 @@
     {
       packages.${system}.funscript-copilot = pkgs.python310Packages.buildPythonPackage {
         pname = "funscript-copilot";
-        version = "0.0.1";
+        version = "0.0.2";
         src = pkgs.fetchFromGitHub {
           owner = "michael-mueller-git";
           repo = "funscript-copilot";
-          rev = "ae21be617332122741548da842b486e2179a6e9";
+          rev = "ebedf5f105e0a8df49c45bf75fd34dd9c91b7ba1";
           # NOTE: change hash to refresh
-          sha256 = "sha256-c35rClTNwm608F6FbeMnGhDSdB1ZbQOaazQSwE7O3+w=";
+          sha256 = "sha256-Y0uMPuGjiYDeteEAS08qqPVzJupd1XYUWRNdBlvUK/w=";
           fetchSubmodules = true;
         };
         propagatedBuildInputs = dependencies;
