@@ -1,9 +1,8 @@
 import logging
-import cv2
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
 from funscript_toolbox.data.ffmpegstream import FFmpegStream, VideoInfo
 from funscript_toolbox.detectors.yolov10 import YOLOv10
@@ -143,8 +142,12 @@ class AutoTracker:
             plt.plot(result_idx, result_score)
             plt.show()
 
+        count = 0
         for idx, val in enumerate(score):
             if idx in result_idx:
-                self.ws.queue.put((script_index, (start_timestamp_in_ms + idx*self.frame_time_in_ms, val)))
+                self.ws.queue.put((script_index, (start_timestamp_in_ms + (idx+1)*self.frame_time_in_ms, val)))
+                count += 1
+                if count % 512 == 0:
+                    time.sleep(0.333)
 
 

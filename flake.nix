@@ -11,8 +11,9 @@
       pkgs = import nixpkgs {
         system = "${system}";
       };
-      dependencies = with pkgs; [
-        (python310.withPackages (p: with p; [
+      dependencies = [
+        (pkgs.python310.withPackages (p: with p; [
+          customPythonPackages.pkgs.scikit-learn
           customPythonPackages.pkgs.opencv4
           customPythonPackages.pkgs.coloredlogs
           customPythonPackages.pkgs.cryptography
@@ -21,7 +22,6 @@
           customPythonPackages.pkgs.pyyaml
           customPythonPackages.pkgs.scipy
           customPythonPackages.pkgs.websockets
-          customPythonPackages.pkgs.scikit-learn
           customPythonPackages.pkgs.GitPython
           customPythonPackages.pkgs.onnxruntime
           customPythonPackages.pkgs.filterpy
