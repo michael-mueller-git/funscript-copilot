@@ -13,4 +13,4 @@ Currently this project only support Linux via [Nix package manager](https://nixo
 
 - Currently nothing is working in the public respository!
 - `auto-tracker`: Is missing the model in the public repository
-- `dense-optical-flow`: sklearn pca is broken for the pinned commit and takes 1000x times longer than the old package version!
+- `dense-optical-flow`: sklearn pca is broken for the pinned commit and takes 1000x times longer than the old package version! Not a problem of the package wwhen we use the same version as the workign one we still have the problem!

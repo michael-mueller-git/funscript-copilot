@@ -6,6 +6,7 @@ import os
 import time
 import cv2
 import sys
+import sklearn
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -69,6 +70,7 @@ class MotionAnalyser:
         self.batch_size = int(self.video_info.fps * 1.1)
         self.ipca = IncrementalPCA(n_components=self.n_components, batch_size=self.batch_size)
         self.ws = WS(args.port)
+        print("sklearn", sklearn.__version__)
 
     def get_relevant_data_from_frame(self, frame) -> np.ndarray:
         height, width = frame.shape[:2]
