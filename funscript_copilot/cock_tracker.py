@@ -45,7 +45,7 @@ class CockTracker:
             start_frame = start_frame 
         ) 
 
-        detector = YOLOv10(os.path.join(os.path.dirname(__file__), "models" "cock_tracker.onnx"), 0.6)
+        detector = YOLOv10(os.path.join(os.path.dirname(__file__), "models", "cock_tracker.onnx"), 0.6)
 
         x, y = [], []
         num = 0
