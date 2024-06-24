@@ -20,7 +20,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib"))
 
 from funscript_toolbox.data.ffmpegstream import FFmpegStream, VideoInfo
 from funscript_copilot.ws_com import WS
-from funscript_copilot.Incremental_PCA import CCIPCA
+from funscript_toolbox.algorithms.ipca import CCIPCA
 
 class Turnpoints:
 
@@ -119,8 +119,6 @@ class MotionAnalyser:
             y_batch.append(np.array(flow[..., 1]).flatten())
 
             if len(y_batch) >= self.batch_size:
-                # TODO hangs here in newer nix pkgs
-                # self.ipca.partial_fit(y_batch)
                 self.ipca.fit(y_batch)
                 ipca_out = self.ipca.transform(y_batch)
                 batch_prediction_pca = np.transpose(np.array(ipca_out))

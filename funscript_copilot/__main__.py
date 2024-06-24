@@ -5,7 +5,7 @@ import logging
 import platform
 
 from funscript_copilot.optical_flow import MotionAnalyser
-from funscript_copilot.auto_tracker import AutoTracker
+from funscript_copilot.cock_tracker import CockTracker
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib"))
 
@@ -24,7 +24,7 @@ def entrypoint():
     parser.add_argument("-p", "--port", type = int, default = 8080, help = "Websocket Port")
     subparsers = parser.add_subparsers(dest='method')
     _ = subparsers.add_parser('dense-optical-flow', help='generate funscript actions by using dense optical flow')
-    _ = subparsers.add_parser('auto-tracker', help='generate funscript actions by using nudenet + ocsort')
+    _ = subparsers.add_parser('cock-tracker', help='generate funscript actions by using yolov10 cock tracker')
     args = parser.parse_args()
 
     setup_logging()
@@ -42,8 +42,8 @@ def entrypoint():
         case 'dense-optical-flow':
             motion_analyser = MotionAnalyser(args)
             motion_analyser.start()
-        case 'auto-tracker':
-            tracker = AutoTracker(args)
+        case 'cock-tracker':
+            tracker = CockTracker(args)
             tracker.start()
         case _:
             raise NotImplementedError(f"{args.method} is not available")
