@@ -24,7 +24,11 @@ def entrypoint():
     parser.add_argument("-p", "--port", type = int, default = 8080, help = "Websocket Port")
     subparsers = parser.add_subparsers(dest='method')
     _ = subparsers.add_parser('dense-optical-flow', help='generate funscript actions by using dense optical flow')
-    _ = subparsers.add_parser('cock-tracker', help='generate funscript actions by using yolov10 cock tracker')
+    cockTrackerArgs = subparsers.add_parser('cock-tracker', help='generate funscript actions by using yolov10 detector')
+    cockTrackerArgs.add_argument("-i", "--classId", type = int, default = 0, help = "cock class id")
+    cockTrackerArgs.add_argument("-m", "--model", type = str, default = None, help = "path to yolov10 onnx")
+    cockTrackerArgs.add_argument("-c", "--confidence", type = float, default = 0.5, help = "detection confidence threshold")
+    cockTrackerArgs.add_argument('--test', help='test mode', action='store_true')
     args = parser.parse_args()
 
     setup_logging()

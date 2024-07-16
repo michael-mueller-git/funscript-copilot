@@ -1,6 +1,7 @@
 import logging
 import time
 import os
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,6 +16,7 @@ from funscript_copilot.ws_com import WS
 
 class CockTracker:
     def __init__(self, args):
+        print("args", args)
         self.args = args
         self.logger = logging.getLogger(__name__)
         self.video_file = args.input
@@ -29,7 +31,10 @@ class CockTracker:
         self.ws = WS(args.port)
 
     def start(self):
-        self.ws.execute(self.generate_actions)
+        if self.args.test:
+            self.generate_actions(0, 0)
+        else:
+            self.ws.execute(self.generate_actions)
 
     def generate_actions(self, start_timestamp_in_ms, script_index):
         first_frame = FFmpegStream.get_frame(self.video_file, start_timestamp_in_ms)
@@ -45,7 +50,10 @@ class CockTracker:
             start_frame = start_frame 
         ) 
 
-        detector = YOLOv10(os.path.join(os.path.dirname(__file__), "models", "cock_tracker.onnx"), 0.6)
+        if self.args.model is None:
+            detector = YOLOv10(os.path.join(os.path.dirname(__file__), "models", "cock_tracker.onnx"), self.args.confidence)
+        else:
+            detector = YOLOv10(self.args.model, self.args.confidence)
 
         x, y = [], []
         num = 0
@@ -61,8 +69,10 @@ class CockTracker:
 
             frame, detections = detector.detect(frame)
 
-            if len(detections) > 0:
-                detections = sorted(detections, key=lambda x: x['score'], reverse=True)
+            detections = list(filter(lambda x: x['class'] == self.args.classId, detections))
+            detections = sorted(detections, key=lambda x: x['score'], reverse=True)
+            
+            if len(detections) > 0: 
                 x.append(num)
                 y.append(detections[0]['box'][3])
 
@@ -79,6 +89,10 @@ class CockTracker:
 
         ffmpeg.stop()
         self.ui.show_loading_screen()
+
+        if len(x) < 2:
+            self.logger.error("No data tracked")
+            return
 
         fh  = interp1d(x, y, kind = 'quadratic')
         x2 = [i for i in range(min(x), max(x))]
@@ -106,6 +120,12 @@ class CockTracker:
         self.ui.close()
 
         y2 = Signal.scale(y2, desired_min, desired_max)
+
+
+        if self.args.test:
+            plt.plot(y2)
+            plt.show()
+            sys.exit()
 
         signal = Signal(SignalParameter(
                 additional_points_merge_time_threshold_in_ms = 50,
